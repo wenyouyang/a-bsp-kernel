@@ -386,7 +386,7 @@ struct v4l2_buffer32 {
 		__s32		fd;
 	} m;
 	__u32			length;
-	__u32			reserved2;
+	__u32			request;
 	__u32			reserved;
 };
 
@@ -486,6 +486,7 @@ static int get_v4l2_buffer32(struct v4l2_buffer __user *kp,
 {
 	u32 type;
 	u32 length;
+	u32 request;
 	enum v4l2_memory memory;
 	struct v4l2_plane32 __user *uplane32;
 	struct v4l2_plane __user *uplane;
@@ -500,7 +501,9 @@ static int get_v4l2_buffer32(struct v4l2_buffer __user *kp,
 	    get_user(memory, &up->memory) ||
 	    put_user(memory, &kp->memory) ||
 	    get_user(length, &up->length) ||
-	    put_user(length, &kp->length))
+	    put_user(length, &kp->length) ||
+	    get_user(request, &up->request) ||
+            put_user(request, &kp->request) )
 		return -EFAULT;
 
 	if (V4L2_TYPE_IS_OUTPUT(type))
@@ -583,6 +586,7 @@ static int put_v4l2_buffer32(struct v4l2_buffer __user *kp,
 {
 	u32 type;
 	u32 length;
+	u32 request;
 	enum v4l2_memory memory;
 	struct v4l2_plane32 __user *uplane32;
 	struct v4l2_plane __user *uplane;
@@ -607,7 +611,9 @@ static int put_v4l2_buffer32(struct v4l2_buffer __user *kp,
 	    assign_in_user(&up->reserved2, &kp->reserved2) ||
 	    assign_in_user(&up->reserved, &kp->reserved) ||
 	    get_user(length, &kp->length) ||
-	    put_user(length, &up->length))
+	    put_user(length, &up->length) ||
+            get_user(request, &kp->request) ||
+            put_user(request, &up->request))
 		return -EFAULT;
 
 	if (V4L2_TYPE_IS_MULTIPLANAR(type)) {
