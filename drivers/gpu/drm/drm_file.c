@@ -45,6 +45,8 @@
 /* from BKL pushdown */
 DEFINE_MUTEX(drm_global_mutex);
 
+EXPORT_SYMBOL(drm_global_mutex);
+
 /**
  * DOC: file operations
  *
