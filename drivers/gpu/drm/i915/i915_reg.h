@@ -6944,6 +6944,7 @@ enum {
 #define  RESET_PCH_HANDSHAKE_ENABLE	(1<<4)
 
 #define GEN8_CHICKEN_DCPR_1		_MMIO(0x46430)
+#define   SKL_SELECT_ALTERNATE_DC_EXIT	(1<<30)
 #define   MASK_WAKEMEM			(1<<13)
 
 #define SKL_DFSM			_MMIO(0x51000)
@@ -6985,6 +6986,8 @@ enum {
 
 #define GEN9_SLICE_COMMON_ECO_CHICKEN0		_MMIO(0x7308)
 #define  DISABLE_PIXEL_MASK_CAMMING		(1<<14)
+
+#define GEN9_SLICE_COMMON_ECO_CHICKEN1		_MMIO(0x731c)
 
 #define GEN7_L3SQCREG1				_MMIO(0xB010)
 #define  VLV_B0_WA_L3SQCREG1_VALUE		0x00D30000
@@ -8475,6 +8478,7 @@ enum skl_power_gate {
 #define  BXT_CDCLK_CD2X_DIV_SEL_2	(2<<22)
 #define  BXT_CDCLK_CD2X_DIV_SEL_4	(3<<22)
 #define  BXT_CDCLK_CD2X_PIPE(pipe)	((pipe)<<20)
+#define  CDCLK_DIVMUX_CD_OVERRIDE	(1<<19)
 #define  BXT_CDCLK_CD2X_PIPE_NONE	BXT_CDCLK_CD2X_PIPE(3)
 #define  BXT_CDCLK_SSA_PRECHARGE_ENABLE	(1<<16)
 #define  CDCLK_FREQ_DECIMAL_MASK	(0x7ff)
@@ -9362,5 +9366,32 @@ enum skl_power_gate {
 #define   GEN8_L3_LRA_1_GPGPU_DEFAULT_VALUE_CHV  0x5FF101FF /* max/min for LRA1/2 */
 #define   GEN9_L3_LRA_1_GPGPU_DEFAULT_VALUE_SKL  0x67F1427F /*    "        " */
 #define   GEN9_L3_LRA_1_GPGPU_DEFAULT_VALUE_BXT  0x5FF101FF /*    "        " */
+
+/* GVT has special read process from some MMIO register,
+ * which so that should be trapped to GVT to make a
+ * complete emulation. Such MMIO is not too much, now using
+ * a static list to cover them.
+ */
+static inline bool in_mmio_read_trap_list(u32 reg)
+{
+	if (unlikely(reg >= PCH_GMBUS0.reg && reg <= PCH_GMBUS5.reg))
+		return true;
+
+	if (unlikely(reg == RING_TIMESTAMP(RENDER_RING_BASE).reg ||
+		reg == RING_TIMESTAMP(BLT_RING_BASE).reg ||
+		reg == RING_TIMESTAMP(GEN6_BSD_RING_BASE).reg ||
+		reg == RING_TIMESTAMP(VEBOX_RING_BASE).reg ||
+		reg == RING_TIMESTAMP(GEN8_BSD2_RING_BASE).reg ||
+		reg == RING_TIMESTAMP_UDW(RENDER_RING_BASE).reg ||
+		reg == RING_TIMESTAMP_UDW(BLT_RING_BASE).reg ||
+		reg == RING_TIMESTAMP_UDW(GEN6_BSD_RING_BASE).reg ||
+		reg == RING_TIMESTAMP_UDW(VEBOX_RING_BASE).reg))
+		return true;
+
+	if (unlikely(reg == SBI_DATA.reg || reg == 0x6c060 || reg == 0x206c))
+		return true;
+
+	return false;
+}
 
 #endif /* _I915_REG_H_ */
