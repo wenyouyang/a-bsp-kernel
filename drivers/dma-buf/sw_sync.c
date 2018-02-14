@@ -171,7 +171,7 @@ static bool timeline_fence_enable_signaling(struct dma_fence *fence)
 
 static void timeline_fence_disable_signaling(struct dma_fence *fence)
 {
-	struct sync_pt *pt = container_of(fence, struct sync_pt, base);
+	struct sync_pt *pt = dma_fence_to_sync_pt(fence);
 
 	list_del_init(&pt->link);
 }

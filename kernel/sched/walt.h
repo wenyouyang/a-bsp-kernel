@@ -27,9 +27,8 @@ void walt_dec_cfs_cumulative_runnable_avg(struct cfs_rq *rq,
 void walt_fixup_busy_time(struct task_struct *p, int new_cpu);
 void walt_init_new_task_load(struct task_struct *p);
 void walt_mark_task_starting(struct task_struct *p);
-void walt_set_window_start(struct rq *rq);
+void walt_set_window_start(struct rq *rq, struct rq_flags *rf);
 void walt_migrate_sync_cpu(int cpu);
-void walt_init_cpu_efficiency(void);
 u64 walt_ktime_clock(void);
 void walt_account_irqtime(int cpu, struct task_struct *curr, u64 delta,
                                   u64 wallclock);
@@ -50,15 +49,14 @@ static inline void walt_dec_cfs_cumulative_runnable_avg(struct cfs_rq *rq,
 static inline void walt_fixup_busy_time(struct task_struct *p, int new_cpu) { }
 static inline void walt_init_new_task_load(struct task_struct *p) { }
 static inline void walt_mark_task_starting(struct task_struct *p) { }
-static inline void walt_set_window_start(struct rq *rq) { }
+static inline void walt_set_window_start(struct rq *rq, struct rq_flags *rf) { }
 static inline void walt_migrate_sync_cpu(int cpu) { }
-static inline void walt_init_cpu_efficiency(void) { }
 static inline u64 walt_ktime_clock(void) { return 0; }
 
 #define walt_cpu_high_irqload(cpu) false
 
 #endif /* CONFIG_SCHED_WALT */
 
-extern unsigned int walt_disabled;
+extern bool walt_disabled;
 
 #endif

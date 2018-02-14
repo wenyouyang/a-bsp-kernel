@@ -855,6 +855,11 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
 
 	if (!rollup_mode) {
 		show_map_vma(m, vma, is_pid);
+		if (vma_get_anon_name(vma)) {
+			seq_puts(m, "Name:           ");
+			seq_print_vma_name(m, vma);
+			seq_putc(m, '\n');
+		}
 	} else if (last_vma) {
 		show_vma_header_prefix(
 			m, mss->first_vma_start, vma->vm_end, 0, 0, 0, 0);
@@ -864,12 +869,7 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
 		ret = SEQ_SKIP;
 	}
 
-	if (!rollup_mode) {
-		if (vma_get_anon_name(vma)) {
-			seq_puts(m, "Name:           ");
-			seq_print_vma_name(m, vma);
-			seq_putc(m, '\n');
-		}
+	if (!rollup_mode)
 		seq_printf(m,
 			   "Size:           %8lu kB\n"
 			   "KernelPageSize: %8lu kB\n"
@@ -877,7 +877,7 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
 			   (vma->vm_end - vma->vm_start) >> 10,
 			   vma_kernel_pagesize(vma) >> 10,
 			   vma_mmu_pagesize(vma) >> 10);
-	}
+
 
 	if (!rollup_mode || last_vma)
 		seq_printf(m,

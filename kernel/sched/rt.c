@@ -901,51 +901,6 @@ static inline int rt_se_prio(struct sched_rt_entity *rt_se)
 	return rt_task_of(rt_se)->prio;
 }
 
-static void dump_throttled_rt_tasks(struct rt_rq *rt_rq)
-{
-	struct rt_prio_array *array = &rt_rq->active;
-	struct sched_rt_entity *rt_se;
-	char buf[500];
-	char *pos = buf;
-	char *end = buf + sizeof(buf);
-	int idx;
-
-	pos += snprintf(pos, sizeof(buf),
-		"sched: RT throttling activated for rt_rq %p (cpu %d)\n",
-		rt_rq, cpu_of(rq_of_rt_rq(rt_rq)));
-
-	if (bitmap_empty(array->bitmap, MAX_RT_PRIO))
-		goto out;
-
-	pos += snprintf(pos, end - pos, "potential CPU hogs:\n");
-	idx = sched_find_first_bit(array->bitmap);
-	while (idx < MAX_RT_PRIO) {
-		list_for_each_entry(rt_se, array->queue + idx, run_list) {
-			struct task_struct *p;
-
-			if (!rt_entity_is_task(rt_se))
-				continue;
-
-			p = rt_task_of(rt_se);
-			if (pos < end)
-				pos += snprintf(pos, end - pos, "\t%s (%d)\n",
-					p->comm, p->pid);
-		}
-		idx = find_next_bit(array->bitmap, MAX_RT_PRIO, idx + 1);
-	}
-out:
-#ifdef CONFIG_PANIC_ON_RT_THROTTLING
-	/*
-	 * Use pr_err() in the BUG() case since printk_sched() will
-	 * not get flushed and deadlock is not a concern.
-	 */
-	pr_err("%s", buf);
-	BUG();
-#else
-	printk_deferred("%s", buf);
-#endif
-}
-
 static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
 {
 	u64 runtime = sched_rt_runtime(rt_rq);
@@ -969,14 +924,8 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
 		 * but accrue some time due to boosting.
 		 */
 		if (likely(rt_b->rt_runtime)) {
-			static bool once = false;
-
 			rt_rq->rt_throttled = 1;
-
-			if (!once) {
-				once = true;
-				dump_throttled_rt_tasks(rt_rq);
-			}
+			printk_deferred_once("sched: RT throttling activated\n");
 		} else {
 			/*
 			 * In case we did anyway, make it go away,
@@ -1432,7 +1381,8 @@ static void yield_task_rt(struct rq *rq)
 static int find_lowest_rq(struct task_struct *task);
 
 static int
-select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
+select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags,
+		  int sibling_count_hint)
 {
 	struct task_struct *curr;
 	struct rq *rq;
@@ -1579,6 +1529,8 @@ static struct task_struct *_pick_next_task_rt(struct rq *rq)
 	return p;
 }
 
+extern int update_rt_rq_load_avg(u64 now, int cpu, struct rt_rq *rt_rq, int running);
+
 static struct task_struct *
 pick_next_task_rt(struct rq *rq, struct task_struct *prev, struct rq_flags *rf)
 {
@@ -1624,12 +1576,18 @@ pick_next_task_rt(struct rq *rq, struct task_struct *prev, struct rq_flags *rf)
 
 	queue_push_tasks(rq);
 
+	if (p)
+		update_rt_rq_load_avg(rq_clock_task(rq), cpu_of(rq), rt_rq,
+					rq->curr->sched_class == &rt_sched_class);
+
 	return p;
 }
 
 static void put_prev_task_rt(struct rq *rq, struct task_struct *p)
 {
 	update_curr_rt(rq);
+
+	update_rt_rq_load_avg(rq_clock_task(rq), cpu_of(rq), &rq->rt, 1);
 
 	/*
 	 * The previous task needs to be made eligible for pushing
@@ -1898,7 +1856,9 @@ retry:
 	}
 
 	deactivate_task(rq, next_task, 0);
+	next_task->on_rq = TASK_ON_RQ_MIGRATING;
 	set_task_cpu(next_task, lowest_rq->cpu);
+	next_task->on_rq = TASK_ON_RQ_QUEUED;
 	activate_task(lowest_rq, next_task, 0);
 	ret = 1;
 
@@ -2164,7 +2124,9 @@ static void pull_rt_task(struct rq *this_rq)
 			resched = true;
 
 			deactivate_task(src_rq, p, 0);
+			p->on_rq = TASK_ON_RQ_MIGRATING;
 			set_task_cpu(p, this_cpu);
+			p->on_rq = TASK_ON_RQ_QUEUED;
 			activate_task(this_rq, p, 0);
 			/*
 			 * We continue with the search, just in
@@ -2344,6 +2306,7 @@ static void task_tick_rt(struct rq *rq, struct task_struct *p, int queued)
 	struct sched_rt_entity *rt_se = &p->rt;
 
 	update_curr_rt(rq);
+	update_rt_rq_load_avg(rq_clock_task(rq), cpu_of(rq), &rq->rt, 1);
 
 	watchdog(rq, p);
 

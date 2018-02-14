@@ -34,14 +34,6 @@
 #define SCHED_CAPACITY_SHIFT	SCHED_FIXEDPOINT_SHIFT
 #define SCHED_CAPACITY_SCALE	(1L << SCHED_CAPACITY_SHIFT)
 
-struct sched_capacity_reqs {
-	unsigned long cfs;
-	unsigned long rt;
-	unsigned long dl;
-
-	unsigned long total;
-};
-
 #ifdef CONFIG_SCHED_SMT
 static inline int cpu_smt_flags(void)
 {
@@ -91,45 +83,14 @@ struct sched_group_energy {
 	struct capacity_state *cap_states; /* ptr to capacity state array */
 };
 
-unsigned long capacity_curr_of(int cpu);
-
 struct sched_group;
-
-struct eas_stats {
-	/* select_idle_sibling() stats */
-	u64 sis_attempts;
-	u64 sis_idle;
-	u64 sis_cache_affine;
-	u64 sis_suff_cap;
-	u64 sis_idle_cpu;
-	u64 sis_count;
-
-	/* select_energy_cpu_brute() stats */
-	u64 secb_attempts;
-	u64 secb_sync;
-	u64 secb_idle_bt;
-	u64 secb_insuff_cap;
-	u64 secb_no_nrg_sav;
-	u64 secb_nrg_sav;
-	u64 secb_count;
-
-	/* find_best_target() stats */
-	u64 fbt_attempts;
-	u64 fbt_no_cpu;
-	u64 fbt_no_sd;
-	u64 fbt_pref_idle;
-	u64 fbt_count;
-
-	/* cas */
-	/* select_task_rq_fair() stats */
-	u64 cas_attempts;
-	u64 cas_count;
-};
 
 struct sched_domain_shared {
 	atomic_t	ref;
 	atomic_t	nr_busy_cpus;
 	int		has_idle_cores;
+
+	bool            overutilized;
 };
 
 struct sched_domain {
@@ -194,8 +155,6 @@ struct sched_domain {
 	unsigned int ttwu_wake_remote;
 	unsigned int ttwu_move_affine;
 	unsigned int ttwu_move_balance;
-
-	struct eas_stats eas_stats;
 #endif
 #ifdef CONFIG_SCHED_DEBUG
 	char *name;

@@ -380,35 +380,42 @@ struct sched_statistics {
 	u64				nr_wakeups_affine_attempts;
 	u64				nr_wakeups_passive;
 	u64				nr_wakeups_idle;
+#endif
+};
 
-	/* select_idle_sibling() */
-	u64				nr_wakeups_sis_attempts;
-	u64				nr_wakeups_sis_idle;
-	u64				nr_wakeups_sis_cache_affine;
-	u64				nr_wakeups_sis_suff_cap;
-	u64				nr_wakeups_sis_idle_cpu;
-	u64				nr_wakeups_sis_count;
+struct sched_entity {
+	/* For load-balancing: */
+	struct load_weight		load;
+	struct rb_node			run_node;
+	struct list_head		group_node;
+	unsigned int			on_rq;
 
-	/* energy_aware_wake_cpu() */
-	u64				nr_wakeups_secb_attempts;
-	u64				nr_wakeups_secb_sync;
-	u64				nr_wakeups_secb_idle_bt;
-	u64				nr_wakeups_secb_insuff_cap;
-	u64				nr_wakeups_secb_no_nrg_sav;
-	u64				nr_wakeups_secb_nrg_sav;
-	u64				nr_wakeups_secb_count;
+	u64				exec_start;
+	u64				sum_exec_runtime;
+	u64				vruntime;
+	u64				prev_sum_exec_runtime;
 
-	/* find_best_target() */
-	u64				nr_wakeups_fbt_attempts;
-	u64				nr_wakeups_fbt_no_cpu;
-	u64				nr_wakeups_fbt_no_sd;
-	u64				nr_wakeups_fbt_pref_idle;
-	u64				nr_wakeups_fbt_count;
+	u64				nr_migrations;
 
-	/* cas */
-	/* select_task_rq_fair() */
-	u64				nr_wakeups_cas_attempts;
-	u64				nr_wakeups_cas_count;
+	struct sched_statistics		statistics;
+
+#ifdef CONFIG_FAIR_GROUP_SCHED
+	int				depth;
+	struct sched_entity		*parent;
+	/* rq on which this entity is (to be) queued: */
+	struct cfs_rq			*cfs_rq;
+	/* rq "owned" by this entity/group: */
+	struct cfs_rq			*my_q;
+#endif
+
+#ifdef CONFIG_SMP
+	/*
+	 * Per entity load average tracking.
+	 *
+	 * Put into separate cache line so it does not
+	 * collide with read-mostly values above.
+	 */
+	struct sched_avg		avg ____cacheline_aligned_in_smp;
 #endif
 };
 
@@ -446,42 +453,6 @@ struct ravg {
 	u16 active_windows;
 };
 #endif
-
-struct sched_entity {
-	/* For load-balancing: */
-	struct load_weight		load;
-	struct rb_node			run_node;
-	struct list_head		group_node;
-	unsigned int			on_rq;
-
-	u64				exec_start;
-	u64				sum_exec_runtime;
-	u64				vruntime;
-	u64				prev_sum_exec_runtime;
-
-	u64				nr_migrations;
-
-	struct sched_statistics		statistics;
-
-#ifdef CONFIG_FAIR_GROUP_SCHED
-	int				depth;
-	struct sched_entity		*parent;
-	/* rq on which this entity is (to be) queued: */
-	struct cfs_rq			*cfs_rq;
-	/* rq "owned" by this entity/group: */
-	struct cfs_rq			*my_q;
-#endif
-
-#ifdef CONFIG_SMP
-	/*
-	 * Per entity load average tracking.
-	 *
-	 * Put into separate cache line so it does not
-	 * collide with read-mostly values above.
-	 */
-	struct sched_avg		avg ____cacheline_aligned_in_smp;
-#endif
-};
 
 struct sched_rt_entity {
 	struct list_head		run_list;
@@ -642,6 +613,7 @@ struct task_struct {
 	 * of this task
 	 */
 	u32 init_load_pct;
+	u64 last_sleep_ts;
 #endif
 
 #ifdef CONFIG_CGROUP_SCHED

@@ -133,9 +133,6 @@ static void __uart_start(struct tty_struct *tty)
 	struct uart_state *state = tty->driver_data;
 	struct uart_port *port = state->uart_port;
 
-	if (port && port->ops->wake_peer)
-		port->ops->wake_peer(port);
-
 	if (port && !uart_tx_stopped(port))
 		port->ops->start_tx(port);
 }
@@ -990,6 +987,8 @@ static int uart_set_info(struct tty_struct *tty, struct tty_port *port,
 		}
 	} else {
 		retval = uart_startup(tty, state, 1);
+		if (retval == 0)
+			tty_port_set_initialized(port, true);
 		if (retval > 0)
 			retval = 0;
 	}
