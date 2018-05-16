@@ -45,7 +45,7 @@ static struct ipu_isys_subdev_info adv7481_hdmi_crl_sd_lite = {
 #ifdef CONFIG_VIDEO_INTEL_UOS
 		.i2c_adapter_id = 6,
 #else
-		.i2c_adapter_id = 0,
+		.i2c_adapter_id = 3,
 #endif
 	}
 };
@@ -73,7 +73,7 @@ static struct ipu_isys_subdev_info adv7481_cvbs_crl_sd_lite = {
 #ifdef CONFIG_VIDEO_INTEL_UOS
 		.i2c_adapter_id = 6,
 #else
-		.i2c_adapter_id = 0,
+		.i2c_adapter_id = 3,
 #endif
 	}
 };
