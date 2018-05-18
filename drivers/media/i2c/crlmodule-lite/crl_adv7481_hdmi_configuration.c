@@ -375,6 +375,8 @@ static ssize_t adv_bstatus_show(struct device *dev, struct device_attribute *att
 }
 static DEVICE_ATTR(bstatus, S_IRUGO, adv_bstatus_show, NULL);
 
+// irq GPIO ping unavailable on ACRN UOS
+#if (!IS_ENABLED(CONFIG_VIDEO_INTEL_UOS))
 static void adv_isr_bh(struct work_struct *work)
 {
         irq_task_t *task = (irq_task_t*) work;
