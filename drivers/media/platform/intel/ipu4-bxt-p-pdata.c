@@ -927,12 +927,69 @@ static struct ipu_isys_subdev_info ti964_sd_2 = {
 };
 #endif
 
+static struct crlmodule_platform_data adv7481_cvbs_pdata = {
+	.ext_clk = 286363636,
+	.xshutdown = 434 + 64,
+	.lanes = 1,
+	.module_name = "ADV7481 CVBS"
+};
+
+static struct ipu_isys_csi2_config adv7481_cvbs_csi2_cfg = {
+	.nlanes = 1,
+	.port = 4,
+};
+
+static struct ipu_isys_subdev_info adv7481_cvbs_crl_sd = {
+	.csi2 = &adv7481_cvbs_csi2_cfg,
+	.i2c = {
+		.board_info = {
+			 .type = CRLMODULE_NAME,
+			 .flags = I2C_CLIENT_TEN,
+			 .addr = 0xe1,
+			 .platform_data = &adv7481_cvbs_pdata,
+		},
+		.i2c_adapter_id = 0,
+	}
+};
+
+#define ADV7481_HDMI_LANES      4
+#define ADV7481_HDMI_I2C_ADDRESS 0xe0
+
+static struct crlmodule_platform_data adv7481_hdmi_pdata = {
+	// FIXME: may need to revisit
+	.ext_clk = 286363636,
+	.xshutdown = 434 + 30,
+	.lanes = ADV7481_HDMI_LANES,
+	.module_name = "ADV7481 HDMI",
+	.crl_irq_pin = 434 + 22,
+	.irq_pin_flags = (IRQF_TRIGGER_RISING | IRQF_ONESHOT),
+	.irq_pin_name = "ADV7481_HDMI_IRQ",
+};
+
+static struct ipu_isys_csi2_config adv7481_hdmi_csi2_cfg = {
+	.nlanes = ADV7481_HDMI_LANES,
+	.port = 0,
+};
+
+static struct ipu_isys_subdev_info adv7481_hdmi_crl_sd = {
+	.csi2 = &adv7481_hdmi_csi2_cfg,
+	.i2c = {
+		.board_info = {
+			 .type = CRLMODULE_NAME,
+			 .flags = I2C_CLIENT_TEN,
+			 .addr = ADV7481_HDMI_I2C_ADDRESS,
+			 .platform_data = &adv7481_hdmi_pdata,
+		},
+		.i2c_adapter_id = 0,
+	}
+};
+
 /*
  * Map buttress output sensor clocks to sensors -
  * this should be coming from ACPI
  */
 struct ipu_isys_clk_mapping clk_mapping[] = {
-	{ CLKDEV_INIT("2-0036", NULL, NULL), "OSC_CLK_OUT0" },
+/*	{ CLKDEV_INIT("2-0036", NULL, NULL), "OSC_CLK_OUT0" },
 	{ CLKDEV_INIT("2-001a", NULL, NULL), "OSC_CLK_OUT0" },
 	{ CLKDEV_INIT("4-001a", NULL, NULL), "OSC_CLK_OUT1" },
 	{ CLKDEV_INIT("2-0010", NULL, NULL), "OSC_CLK_OUT0" },
@@ -942,6 +999,7 @@ struct ipu_isys_clk_mapping clk_mapping[] = {
 	{ CLKDEV_INIT("0-0010", NULL, NULL), "OSC_CLK_OUT0" },
 	{ CLKDEV_INIT("2-000e", NULL, NULL), "OSC_CLK_OUT0" },
 	{ CLKDEV_INIT("4-000e", NULL, NULL), "OSC_CLK_OUT1" },
+*/
 	{ CLKDEV_INIT(NULL, NULL, NULL), NULL }
 };
 
@@ -1001,6 +1059,8 @@ static struct ipu_isys_subdev_pdata pdata = {
 		&ti964_sd,
 		&ti964_sd_2,
 #endif
+		&adv7481_hdmi_crl_sd,
+		&adv7481_cvbs_crl_sd,
 		NULL,
 	},
 	.clk_map = clk_mapping,
