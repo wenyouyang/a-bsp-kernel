@@ -48,6 +48,7 @@
 #include <linux/sched/clock.h>
 #include <linux/sched/debug.h>
 #include <linux/sched/task_stack.h>
+#include <linux/clocksource.h>
 
 #include <linux/uaccess.h>
 #include <asm/sections.h>
@@ -441,6 +442,20 @@ static char __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
 static char *log_buf = __log_buf;
 static u32 log_buf_len = __LOG_BUF_LEN;
 
+static u64 printk_clock(void)
+{
+	static u32 cyc2ns_mul, cyc2ns_shift;
+	u64 tsc_now;
+	rdtscll(tsc_now);
+	if (!cyc2ns_mul) {
+		unsigned int eax = 0x15, ebx, ecx = 0, edx;
+		native_cpuid(&eax, &ebx, &ecx, &edx);
+		eax = 19200 * ebx / eax; // osc frequency is 19.2 MHz
+		clocks_calc_mult_shift(&cyc2ns_mul, &cyc2ns_shift, eax, NSEC_PER_MSEC, 0);
+	}
+	return mul_u64_u32_shr(tsc_now, cyc2ns_mul, cyc2ns_shift);
+}
+
 /* Return log buffer address */
 char *log_buf_addr_get(void)
 {
@@ -629,7 +644,7 @@ static int log_store(int facility, int level,
 	if (ts_nsec > 0)
 		msg->ts_nsec = ts_nsec;
 	else
-		msg->ts_nsec = local_clock();
+		msg->ts_nsec = printk_clock();
 	memset(log_dict(msg) + dict_len, 0, pad_len);
 	msg->len = size;
 
@@ -1636,7 +1651,7 @@ static bool cont_add(int facility, int level, enum log_flags flags, const char *
 		cont.facility = facility;
 		cont.level = level;
 		cont.owner = current;
-		cont.ts_nsec = local_clock();
+		cont.ts_nsec = printk_clock();
 		cont.flags = flags;
 	}
 
