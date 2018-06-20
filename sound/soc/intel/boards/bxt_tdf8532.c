@@ -271,6 +271,7 @@ static struct snd_soc_dai_link broxton_tdf8532_dais[] = {
 		.platform_name = "0000:00:0e.0",
 		.init = NULL,
 		.nonatomic = 1,
+		.dynamic = 1,
 	},
 	{
 		.name = "Bxt Compress Probe capture",
@@ -281,6 +282,7 @@ static struct snd_soc_dai_link broxton_tdf8532_dais[] = {
 		.platform_name = "0000:00:0e.0",
 		.init = NULL,
 		.nonatomic = 1,
+		.dynamic = 1,
 	},
 	/* Trace Buffer DAI links */
 	{
@@ -292,6 +294,7 @@ static struct snd_soc_dai_link broxton_tdf8532_dais[] = {
 		.platform_name = "0000:00:0e.0",
 		.capture_only = true,
 		.ignore_suspend = 1,
+		.dynamic = 1,
 	},
 	{
 		.name = "Bxt Trace Buffer1",
@@ -302,6 +305,7 @@ static struct snd_soc_dai_link broxton_tdf8532_dais[] = {
 		.platform_name = "0000:00:0e.0",
 		.capture_only = true,
 		.ignore_suspend = 1,
+		.dynamic = 1,
 	},
 	/* Back End DAI links */
 	{
