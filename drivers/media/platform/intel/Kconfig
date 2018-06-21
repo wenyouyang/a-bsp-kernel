@@ -99,3 +99,9 @@ config INTEL_IPU4_IMX290
 	depends on INTEL_IPU4_BXT_P_PDATA
 	---help---
 	Sony 8MB camera sensor is enabled for HDR function
+
+config INTEL_IPU4_APL_POLARIS_PDATA
+	bool "Enable built in platform data for Polaris Platform"
+	---help---
+	IPU4 platform data for Polaris platform
+
