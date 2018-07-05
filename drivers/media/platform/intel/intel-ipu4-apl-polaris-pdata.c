@@ -23,6 +23,7 @@
 #include <linux/pci.h>
 
 #include <media/intel-ipu4-isys.h>
+#include <media/ds90ub940.h>
 
 #define GPIO_BASE             434
 
@@ -47,6 +48,38 @@ static struct intel_ipu4_isys_subdev_info adv7282_sd = {
 };
 #endif
 
+#if defined(CONFIG_VIDEO_DS90UB940) || defined(CONFIG_VIDEO_DS90UB940_MODULE)
+
+struct ds90ub940_platform_data ds90ub940_pdata = {
+	.i2c_addr = 0x2C,
+	.i2c_adapter = 0,
+	.ext_clk = 0xFF,
+	.csi2_lanes = 2,
+	.csi2_port = 4,
+	.module_name = "ds90ub940",
+	.powerdown_pin = 434 + 2,
+	.pass_pin = -1,
+};
+
+static struct intel_ipu4_isys_csi2_config ds90ub940_csi2_cfg = {
+	.nlanes = 2,
+	.port = 4,
+};
+
+static struct intel_ipu4_isys_subdev_info ds90ub940_sd = {
+	.csi2 = &ds90ub940_csi2_cfg,
+	.i2c = {
+		.board_info = {
+			 .type = "ds90ub940",
+			 .flags = 0,
+			 .addr = 0x2C,
+			 .platform_data = &ds90ub940_pdata,
+		},
+		.i2c_adapter_id = 0,
+	},
+};
+#endif
+
 /*
  * Map buttress output sensor clocks to sensors -
  */
@@ -58,6 +91,9 @@ static struct intel_ipu4_isys_subdev_pdata pdata = {
 	.subdevs = (struct intel_ipu4_isys_subdev_info *[]) {
 #if defined(CONFIG_VIDEO_ADV728X) || defined(CONFIG_VIDEO_ADV728X_MODULE)
 		&adv7282_sd,
+#endif
+#if defined(CONFIG_VIDEO_DS90UB940) || defined(CONFIG_VIDEO_DS90UB940_MODULE)
+		&ds90ub940_sd,
 #endif
 		NULL,
 	},
