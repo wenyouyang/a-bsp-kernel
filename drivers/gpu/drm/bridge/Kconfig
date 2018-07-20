@@ -100,6 +100,13 @@ config DRM_TI_TFP410
 	---help---
 	  Texas Instruments TFP410 DVI/HDMI Transmitter driver
 
+config DRM_TI_FPDLINK3
+	tristate "TI FPD-Link III Serializer"
+        depends on ACPI
+        default n
+	help
+	  TI FPD Link-III Serializers driver
+
 source "drivers/gpu/drm/bridge/analogix/Kconfig"
 
 source "drivers/gpu/drm/bridge/adv7511/Kconfig"
