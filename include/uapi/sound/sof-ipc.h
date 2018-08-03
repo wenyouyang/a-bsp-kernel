@@ -29,12 +29,12 @@
 /* Global Message - Generic */
 #define SOF_GLB_TYPE_SHIFT			28
 #define SOF_GLB_TYPE_MASK			(0xf << SOF_GLB_TYPE_SHIFT)
-#define SOF_GLB_TYPE(x)				(x << SOF_GLB_TYPE_SHIFT)
+#define SOF_GLB_TYPE(x)				((x) << SOF_GLB_TYPE_SHIFT)
 
 /* Command Message - Generic */
 #define SOF_CMD_TYPE_SHIFT			16
 #define SOF_CMD_TYPE_MASK			(0xfff << SOF_CMD_TYPE_SHIFT)
-#define SOF_CMD_TYPE(x)				(x << SOF_CMD_TYPE_SHIFT)
+#define SOF_CMD_TYPE(x)				((x) << SOF_CMD_TYPE_SHIFT)
 
 /* Global Message Types */
 #define SOF_IPC_GLB_REPLY			SOF_GLB_TYPE(0x1U)
@@ -99,9 +99,9 @@
 #define SOF_IPC_TRACE_DMA_POSITION		SOF_CMD_TYPE(0x002)
 
 /* Get message component id */
-#define SOF_IPC_MESSAGE_ID(x)			(x & 0xffff)
+#define SOF_IPC_MESSAGE_ID(x)			((x) & 0xffff)
 
-/* maximum message size for mailbox Tx/Tx */
+/* maximum message size for mailbox Tx/Rx */
 #define SOF_IPC_MSG_MAX_SIZE			128
 
 /*
@@ -198,6 +198,22 @@ struct sof_ipc_compound_hdr {
 #define SOF_DAI_FMT_INV_MASK		0x0f00
 #define SOF_DAI_FMT_MASTER_MASK		0xf000
 
+ /* ssc1: TINTE */
+#define SOF_DAI_INTEL_SSP_QUIRK_TINTE		(1 << 0)
+ /* ssc1: PINTE */
+#define SOF_DAI_INTEL_SSP_QUIRK_PINTE		(1 << 1)
+ /* ssc2: SMTATF */
+#define SOF_DAI_INTEL_SSP_QUIRK_SMTATF		(1 << 2)
+ /* ssc2: MMRATF */
+#define SOF_DAI_INTEL_SSP_QUIRK_MMRATF		(1 << 3)
+ /* ssc2: PSPSTWFDFD */
+#define SOF_DAI_INTEL_SSP_QUIRK_PSPSTWFDFD	(1 << 4)
+ /* ssc2: PSPSRWFDFD */
+#define SOF_DAI_INTEL_SSP_QUIRK_PSPSRWFDFD	(1 << 5)
+ /* here is the possibility to define others aux macros */
+
+#define SOF_DAI_INTEL_SSP_FRAME_PULSE_WIDTH_MAX		38
+
 /* types of DAI */
 enum sof_ipc_dai_type {
 	SOF_DAI_INTEL_NONE = 0,
@@ -208,9 +224,35 @@ enum sof_ipc_dai_type {
 
 /* SSP Configuration Request - SOF_IPC_DAI_SSP_CONFIG */
 struct sof_ipc_dai_ssp_params {
-	struct sof_ipc_hdr hdr;
-	uint16_t mode;
-	uint16_t clk_id;
+	uint16_t mode;   // FIXME: do we need this?
+	uint16_t mclk_id;
+
+	uint32_t mclk_rate;	/* mclk frequency in Hz */
+	uint32_t fsync_rate;	/* fsync frequency in Hz */
+	uint32_t bclk_rate;	/* bclk frequency in Hz */
+
+	/* TDM */
+	uint32_t tdm_slots;
+	uint32_t rx_slots;
+	uint32_t tx_slots;
+
+	/* data */
+	uint32_t sample_valid_bits;
+	uint16_t tdm_slot_width;
+	uint16_t reserved2;	/* alignment */
+
+	/* MCLK */
+	uint32_t mclk_direction;
+	uint32_t mclk_keep_active;
+	uint32_t bclk_keep_active;
+	uint32_t fs_keep_active;
+
+	uint16_t frame_pulse_width;
+	uint32_t quirks; // FIXME: is 32 bits enough ?
+
+	uint16_t padding;
+	/* private data, e.g. for quirks */
+	//uint32_t pdata[10]; // FIXME: would really need ~16 u32
 } __attribute__((packed));
 
 /* HDA Configuration Request - SOF_IPC_DAI_HDA_CONFIG */
@@ -256,28 +298,12 @@ struct sof_ipc_dai_config {
 	/* physical protocol and clocking */
 	uint16_t format;	/* SOF_DAI_FMT_ */
 	uint16_t reserved;	/* alignment */
-	uint32_t mclk;	/* mclk frequency in Hz */
-	uint32_t bclk;	/* bclk frequency in Hz */
-	uint32_t fclk;	/* cclk frequency in Hz */
-
-	/* TDM */
-	uint32_t num_slots;
-	uint32_t rx_slot_mask;
-	uint32_t tx_slot_mask;
-
-	/* data */
-	uint16_t sample_valid_bits;
-	uint16_t sample_container_bits;
-
-	/* MCLK */
-	uint16_t mclk_always_run;
-	uint16_t mclk_master;
 
 	/* HW specific data */
 	union {
-		struct sof_ipc_dai_ssp_params ssp[0];
-		struct sof_ipc_dai_hda_params hda[0];
-		struct sof_ipc_dai_dmic_params dmic[0];
+		struct sof_ipc_dai_ssp_params ssp;
+		struct sof_ipc_dai_hda_params hda;
+		struct sof_ipc_dai_dmic_params dmic;
 	};
 };
 
@@ -399,7 +425,6 @@ struct sof_ipc_pcm_params {
 	struct sof_ipc_hdr hdr;
 	uint32_t comp_id;
 	struct sof_ipc_stream_params params;
-	enum sof_ipc_chmap channel_map[];
 }  __attribute__((packed));
 
 /* PCM params info reply - SOF_IPC_STREAM_PCM_PARAMS_REPLY */
