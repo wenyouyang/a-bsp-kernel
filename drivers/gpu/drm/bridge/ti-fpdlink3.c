@@ -31,12 +31,12 @@ struct fpd3ser_state {
 /* until ACPI is supported, device will searched in the bus named as 
 	I2C_BUS
 */
-#define I2C_BUS  "i2c_designware.3"
+#define I2C_BUS  "i2c_designware.2"
 #define MAX_I2C_TRIAL 5
 
 static struct fpd3ser_state state = {
-	.gpio_pdb = 456,
-	.gpio_int = 457,
+	.gpio_pdb = 454,
+	.gpio_int = 455,
 	.i2c_bus = NULL,
 };
 
@@ -119,7 +119,7 @@ static int __fpd3ser_init(void)
 	msleep(10);
 
 	/* enable I2C pass-through mode */
-	ret |= fpd3ser_write(0x1A, 0x03, 0xDA);
+	ret |= fpd3ser_write(0x0C, 0x03, 0xDA);
 
 	/* reset deserializer */
 	ret |= fpd3ser_write(0x2C, 0x01, 0x02);
@@ -134,23 +134,23 @@ static int __fpd3ser_init(void)
 	} while ((reset_resp != 0) && (try < 100) && (val & 0xFD));
 
 	/* use 24bit + sync */
-	ret |= fpd3ser_write(0x1A, 0x1A, 0x00);
-	ret |= fpd3ser_write(0x1A, 0x54, 0x02);
+	ret |= fpd3ser_write(0x0C, 0x1A, 0x00);
+	ret |= fpd3ser_write(0x0C, 0x54, 0x02);
 	/* failsafe to high / clear counters */
-	ret |= fpd3ser_write(0x1A, 0x04, 0xA0);
+	ret |= fpd3ser_write(0x0C, 0x04, 0xA0);
 
 	/* tristate serializer GPIOs  */
-	ret |= fpd3ser_write(0x1A, 0x0D, 0x00);
-	ret |= fpd3ser_write(0x1A, 0x0E, 0x20);
-	ret |= fpd3ser_write(0x1A, 0x0F, 0x02);
+	ret |= fpd3ser_write(0x0C, 0x0D, 0x00);
+	ret |= fpd3ser_write(0x0C, 0x0E, 0x20);
+	ret |= fpd3ser_write(0x0C, 0x0F, 0x02);
 
 
 	/* PORT1_SEL = 1 */
 	/* tristate D_GPIO1 and 2 */ 
-	ret |= fpd3ser_write(0x1A, 0x0E, 0x20);
-	ret |= fpd3ser_write(0x1A, 0x1E, 0x02);
+	ret |= fpd3ser_write(0x0C, 0x0E, 0x20);
+	ret |= fpd3ser_write(0x0C, 0x1E, 0x02);
 	/* PORT0_SEL = 1 */
-	ret |= fpd3ser_write(0x1A, 0x0E, 0x01);
+	ret |= fpd3ser_write(0x0C, 0x0E, 0x01);
 
 	/* set SCL high time */
 	ret |= fpd3ser_write(0x2C, 0x26, 0x16);
