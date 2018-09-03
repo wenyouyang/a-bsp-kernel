@@ -102,10 +102,15 @@ config DRM_TI_TFP410
 
 config DRM_TI_FPDLINK3
 	tristate "TI FPD-Link III Serializer"
-        depends on ACPI
         default n
 	help
 	  TI FPD Link-III Serializers driver
+
+config DRM_TI_SN65DSI85
+	tristate "TI MIPI DSI to LVDS Bridge"
+	default n
+	---help---
+	  TI SN65DSI85 Dual MIPI DSI to LVDS Bridge chip driver
 
 source "drivers/gpu/drm/bridge/analogix/Kconfig"
 
