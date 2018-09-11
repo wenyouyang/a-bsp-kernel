@@ -20,27 +20,58 @@
 #include <linux/delay.h>
 
 #define FPD3SER_MODULE_NAME "fpdlink3"
-#define FPD3SER_MODULE_VERSION "0.0.1"
+#define FPD3SER_MODULE_VERSION "0.1.1"
+
+/* until ACPI is supported, devices will searched on i2b busses */
+#define MAX_I2C_TRIAL 5
+#define FPD3SER_NR_OF_DEVICES 4
+#define ID_STRING_LENGTH 7
 
 struct fpd3ser_state {
+	char i2c_bus_name[32];
 	int gpio_pdb;
 	int gpio_int;
 	struct i2c_adapter *i2c_bus;
+	char id_string[ID_STRING_LENGTH];
+	unsigned char i2c_ser_addr;
+	unsigned char i2c_deser_addr;
 };
 
-/* until ACPI is supported, device will searched in the bus named as 
-	I2C_BUS
-*/
-#define I2C_BUS  "i2c_designware.2"
-#define MAX_I2C_TRIAL 5
+static struct fpd3ser_state links[FPD3SER_NR_OF_DEVICES] = {
+	[0].i2c_bus_name = "i2c_designware.2",
+	[0].id_string = "_UB949",
+	[0].gpio_pdb = 454,
+	[0].gpio_int = 455,
+	[0].i2c_bus = NULL,
+	[0].i2c_ser_addr = 0x0C,
+	[0].i2c_deser_addr = 0x2C,
 
-static struct fpd3ser_state state = {
-	.gpio_pdb = 454,
-	.gpio_int = 455,
-	.i2c_bus = NULL,
+	[1].i2c_bus_name = "i2c_designware.6",
+	[1].id_string = "_UB947",
+	[1].gpio_pdb = 459,
+	[1].gpio_int = 460,
+	[1].i2c_bus = NULL,
+	[1].i2c_ser_addr = 0x0C,
+	[1].i2c_deser_addr = 0x2C,
+
+	[2].i2c_bus_name = "i2c_designware.6",
+	[2].id_string = "_UB947",
+	[2].gpio_pdb = 461,
+	[2].gpio_int = 462,
+	[2].i2c_bus = NULL,
+	[2].i2c_ser_addr = 0x12,
+	[2].i2c_deser_addr = 0x2D,
+
+	[3].i2c_bus_name = "i2c_designware.3",
+	[3].id_string = "_UB949",
+	[3].gpio_pdb = 456,
+	[3].gpio_int = 457,
+	[3].i2c_bus = NULL,
+	[3].i2c_ser_addr = 0x1A,
+	[3].i2c_deser_addr = 0x2C,
 };
 
-static int fpd3ser_write(u8 addr, u8 reg, u8 val)
+static int fpd3ser_write(unsigned int index, u8 addr, u8 reg, u8 val)
 {
 	int ret;
 	int i;
@@ -55,22 +86,22 @@ static int fpd3ser_write(u8 addr, u8 reg, u8 val)
 	msg.flags = 0;
 
 	for (i = 0; i < MAX_I2C_TRIAL; i++) {
-		ret = i2c_transfer(state.i2c_bus, &msg, 1);
+		ret = i2c_transfer(links[index].i2c_bus, &msg, 1);
 		if (1 == ret) {
 			pr_debug
-			    ("fpd3ser_write success: %02X [%02X]:%02X r:%d\n",
-			     addr, reg, val, ret);
+			    ("[%d] fpd3ser_write success: %02X [%02X]:%02X r:%d\n",
+			     index, addr, reg, val, ret);
 			return 0;
 		}
 	}
 
-	pr_err("fpd3ser_write fail: %02X [%02X]:%02X r:%d\n", addr, reg, val,
-		ret);
+	pr_err("[%d] fpd3ser_write fail: %02X [%02X]:%02X r:%d\n", index, addr,
+	       reg, val, ret);
 
 	return ret;
 }
 
-static int fpd3ser_read(u8 addr, u8 reg, u8 * buf, int len)
+static int fpd3ser_read(unsigned int index, u8 addr, u8 reg, u8 * buf, int len)
 {
 	int ret;
 	int i;
@@ -92,15 +123,17 @@ static int fpd3ser_read(u8 addr, u8 reg, u8 * buf, int len)
 	};
 
 	for (i = 0; i < MAX_I2C_TRIAL; i++) {
-		ret = i2c_transfer(state.i2c_bus, msg, 2);
+		ret = i2c_transfer(links[index].i2c_bus, msg, 2);
 		if (ret >= 0) {
-			pr_debug("fpd3ser_read  success: %02X [%02X]:%02X\n",
-				addr, reg, buf[0]);
+			pr_debug
+			    ("[%d] fpd3ser_read  success: %02X [%02X]:%02X\n",
+			     index, addr, reg, buf[0]);
 			return 0;
 		}
 	}
 
-	pr_err("fpd3ser_read  fail: %02X [%02X]:? r:%d \n", addr, reg, ret);
+	pr_err("[%d] fpd3ser_read  fail: %02X [%02X]:? r:%d \n", index, addr,
+	       reg, ret);
 	return ret;
 }
 
@@ -109,90 +142,209 @@ static int __fpd3ser_init(void)
 	int ret = 0;
 	u8 val;
 	int try = 0;
-	int reset_resp = 0;
+	int resp = 0;
+	unsigned int i = 0;
 
-	if (state.gpio_pdb != -1)
-		gpio_direction_output(state.gpio_pdb, 1);
+	u8 id[ID_STRING_LENGTH] = { 0, 0, 0, 0, 0, 0, 0 };
 
-	if (state.gpio_int != -1)
-		gpio_direction_input(state.gpio_int);
-	msleep(10);
+	for (i = 0; i < ARRAY_SIZE(links); i++) {
+		if (links[i].gpio_pdb != -1)
+			gpio_direction_output(links[i].gpio_pdb, 1);
 
-	/* enable I2C pass-through mode */
-	ret |= fpd3ser_write(0x0C, 0x03, 0xDA);
+		msleep(10);
 
-	/* reset deserializer */
-	ret |= fpd3ser_write(0x2C, 0x01, 0x02);
+		memset(id, 0, ID_STRING_LENGTH);
 
-	/* wait reset bit to clear reg 0x01 bit 1 */
-	do {
-		reset_resp = fpd3ser_read(0x2C, 0x01, &val, 1);
-		try++;
-		msleep(1);
-		
-		pr_debug("fpd3ser_init: reset_resp:%d %02X\n",reset_resp, val);
-	} while ((reset_resp != 0) && (try < 100) && (val & 0xFD));
+		/* cross check */
+		ret |= fpd3ser_read(i, links[0].i2c_ser_addr, 0xf0, id, 6);
+		if (strncmp(id, links[i].id_string, ID_STRING_LENGTH)) {
+			pr_err
+			    ("[%d] fpd3ser_init: ID string mismatch (%s != %s)",
+			     i, links[i].id_string, id);
+			continue;
+		}
 
-	/* use 24bit + sync */
-	ret |= fpd3ser_write(0x0C, 0x1A, 0x00);
-	ret |= fpd3ser_write(0x0C, 0x54, 0x02);
-	/* failsafe to high / clear counters */
-	ret |= fpd3ser_write(0x0C, 0x04, 0xA0);
+		/* DS90UB949 */
+		if (links[i].id_string[5] == '9') {
+			/* enable I2C pass-through mode */
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x03, 0xDA);
 
-	/* tristate serializer GPIOs  */
-	ret |= fpd3ser_write(0x0C, 0x0D, 0x00);
-	ret |= fpd3ser_write(0x0C, 0x0E, 0x20);
-	ret |= fpd3ser_write(0x0C, 0x0F, 0x02);
+			/* reset deserializer */
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x01,
+					  0x02);
 
+			/* wait reset bit to clear reg 0x01 bit 1 */
+			do {
+				resp =
+				    fpd3ser_read(i, links[i].i2c_deser_addr,
+						 0x01, &val, 1);
+				try++;
+				msleep(1);
 
-	/* PORT1_SEL = 1 */
-	/* tristate D_GPIO1 and 2 */ 
-	ret |= fpd3ser_write(0x0C, 0x0E, 0x20);
-	ret |= fpd3ser_write(0x0C, 0x1E, 0x02);
-	/* PORT0_SEL = 1 */
-	ret |= fpd3ser_write(0x0C, 0x0E, 0x01);
+				pr_debug("fpd3ser_init: resp:%d %02X\n", resp,
+					 val);
+			} while ((resp != 0) && (try < 100) && (val & 0xFD));
 
-	/* set SCL high time */
-	ret |= fpd3ser_write(0x2C, 0x26, 0x16);
-	/* set SCL high time */
-	ret |= fpd3ser_write(0x2C, 0x27, 0x16);
+			/* use 24bit + sync */
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x1A, 0x00);
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x54, 0x02);
+			/* failsafe to high / clear counters */
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x04, 0xA0);
 
-	/* set video disabled and override FC */
-	ret |= fpd3ser_write(0x2C, 0x28, 0x80);
-	ret |= fpd3ser_write(0x2C, 0x34, 0x89);
-	ret |= fpd3ser_write(0x2C, 0x49, 0x60);
+			/* tristate serializer GPIOs  */
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x0D, 0x00);
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x0E, 0x20);
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x0F, 0x02);
 
-	/* set TPC_RST high */
-	ret |= fpd3ser_write(0x2C, 0x1D, 0x09);
-	/* set LAMP_ON and LAMP_PWM high */
-	ret |= fpd3ser_write(0x2C, 0x1E, 0x90);
-	ret |= fpd3ser_write(0x2C, 0x1F, 0x09);
+			/* PORT1_SEL = 1 */
+			/* tristate D_GPIO1 and 2 */
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x0E, 0x20);
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x1E, 0x02);
+			/* PORT0_SEL = 1 */
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x0E, 0x01);
+
+			/* set SCL high time */
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x26,
+					  0x16);
+			/* set SCL high time */
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x27,
+					  0x16);
+
+			/* set video disabled and override FC */
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x28,
+					  0x80);
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x34,
+					  0x89);
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x49,
+					  0x60);
+
+			/* set TPC_RST high */
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x1D,
+					  0x09);
+			/* set LAMP_ON and LAMP_PWM high */
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x1E,
+					  0x90);
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x1F,
+					  0x09);
+		} else if (links[i].id_string[5] == '7') {
+			/* DS90UB947 */
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x03, 0xCA);
+			/* deserializer address 7 bit: 0x2C */
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x06, 0x58);
+			/* remote slave device[2] addr 0x74 */
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x71, 0xE8);
+			/* remote slave alias[2] addr 0x74 */
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x78, 0xE8);
+			/* GPIO0: enable input (BLT_EN_RSE_) */
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x0D, 0x23);
+			/* GPIO2: enable remote output low  (AUX_DET)
+			   GPIO1: enable input (BLT_PWM_RSE_) */
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x0E, 0x53);
+			/* GPIO3: enable input (TP_RST_RSE_) */
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x0F, 0x03);
+			/* enable pass through all i2c addresses */
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x17, 0x9E);
+
+			pr_debug("ser init %s", ret ? "failed" : "done");
+
+			/* configure remote deserializer */
+			/* GPIO0: enable remote output low  (BL_EN) */
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x1D,
+					  0x25);
+			/* GPIO3: enable remote output low  (F_RESET) */
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x1F,
+					  0x05);
+			/* GPIO2: enable input (AUX_DET)
+			   GPIO1: enable remote output low (BL_APWM) */
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x1E,
+					  0x35);
+			/* ? */
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x34,
+					  0x02);
+			/* OEN = 1 output enable */
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x02,
+					  0x80);
+			/* GPIO_REG6: disable output low (?)
+			   GPIO_REG5: enable output high (?) */
+			ret |=
+			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x20,
+					  0x09);
+			pr_debug("deser init %s", ret ? "failed" : "done");
+		}
+
+	}
 	return ret;
 }
 
 static int find_i2c_bus(struct device *dev, void *data)
 {
+	int i = 0;
 	pr_debug("fpdlink3 search: %s\n", dev_name(dev->parent));
-	if (strcmp(data, dev_name(dev->parent)))
-		return 0;
 
-	if (state.i2c_bus == NULL) {
-		pr_debug("fpdlink3 assigning %s to state.i2c_bus\n",
-			dev_name(dev->parent));
-		state.i2c_bus = to_i2c_adapter(dev);
+	for (i = 0; i < ARRAY_SIZE(links); i++) {
+		if (strcmp(links[i].i2c_bus_name, dev_name(dev->parent)))
+			continue;
+
+		if (links[i].i2c_bus == NULL) {
+			pr_info("[%d] fpdlink3 assigning %s to i2c_bus\n",
+				i, dev_name(dev->parent));
+			links[i].i2c_bus = to_i2c_adapter(dev);
+		}
 	}
 
-	return 1;
+	return 0;
 }
 
 static int __init fpdlink3_init(void)
 {
-	pr_info("fpdlink3 init\n");
+	unsigned int i = 0;
+	unsigned int err = 0;
+	pr_debug("fpdlink3 init\n");
 
-	i2c_for_each_dev(I2C_BUS, find_i2c_bus);
+	i2c_for_each_dev(NULL, find_i2c_bus);
 
-	if (state.i2c_bus == NULL) {
-		pr_err("fpdlink3: no i2c bus named %s found", I2C_BUS);
+	for (i = 0; i < ARRAY_SIZE(links); i++) {
+		if (links[i].i2c_bus == NULL) {
+			pr_err("fpdlink3: no i2c bus named %s found\n",
+			       links[i].i2c_bus_name);
+			err++;
+		}
+	}
+
+	if (err == FPD3SER_NR_OF_DEVICES) {
+		pr_err("fpdlink3: none of expected devices found\n");
 		return -ENODEV;
 	}
 
@@ -201,12 +353,15 @@ static int __init fpdlink3_init(void)
 
 static void __exit fpdlink3_remove(void)
 {
-	if (state.gpio_pdb != -1)
-		gpio_set_value(state.gpio_pdb, 0);
+	unsigned int i = 0;
+	for (i = 0; i < ARRAY_SIZE(links); i++) {
+		if (links[i].gpio_pdb != -1)
+			gpio_set_value(links[i].gpio_pdb, 0);
 
-	if (state.i2c_bus != NULL) {
-		i2c_put_adapter(state.i2c_bus);
-		state.i2c_bus = NULL;
+		if (links[i].i2c_bus != NULL) {
+			i2c_put_adapter(links[i].i2c_bus);
+			links[i].i2c_bus = NULL;
+		}
 	}
 	pr_info("fpdlink3_remove\n");
 }
