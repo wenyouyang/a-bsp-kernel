@@ -28,10 +28,12 @@
 #define FPD3SER_HW_VERSION_A1 1
 #define FPD3SER_HW_VERSION_B1 0
 
-#if (FPD3SER_HW_VERSION_B1 == 1)
+#if (FPD3SER_HW_VERSION_A1 == 1)
+#define FPD3SER_NR_OF_DEVICES 3
+#elif (FPD3SER_HW_VERSION_B1 == 1)
 #define FPD3SER_NR_OF_DEVICES 4
 #else
-#define FPD3SER_NR_OF_DEVICES 4
+#error undefined FPD3SER_HW_VERSION_xx
 #endif
 
 struct fpd3ser_state {
@@ -45,6 +47,31 @@ struct fpd3ser_state {
 };
 
 static struct fpd3ser_state links[FPD3SER_NR_OF_DEVICES] = {
+#if (FPD3SER_HW_VERSION_A1 == 1)	
+	[0].i2c_bus_name = "i2c_designware.2",
+	[0].id_string = "_UB949",
+	[0].gpio_pdb = 454,
+	[0].gpio_int = 455,
+	[0].i2c_bus = NULL,
+	[0].i2c_ser_addr = 0x0C,
+	[0].i2c_deser_addr = 0x2C,
+
+	[1].i2c_bus_name = "i2c_designware.6",
+	[1].id_string = "_UB947",
+	[1].gpio_pdb = 459,
+	[1].gpio_int = 460,
+	[1].i2c_bus = NULL,
+	[1].i2c_ser_addr = 0x0C,
+	[1].i2c_deser_addr = 0x0F,
+
+	[2].i2c_bus_name = "i2c_designware.6",
+	[2].id_string = "_UB947",
+	[2].gpio_pdb = 461,
+	[2].gpio_int = 462,
+	[2].i2c_bus = NULL,
+	[2].i2c_ser_addr = 0x12,
+	[2].i2c_deser_addr = 0x15,
+#elif (FPD3SER_HW_VERSION_B1 == 1)
 	[0].i2c_bus_name = "i2c_designware.2",
 	[0].id_string = "_UB949",
 	[0].gpio_pdb = 454,
@@ -71,11 +98,14 @@ static struct fpd3ser_state links[FPD3SER_NR_OF_DEVICES] = {
 
 	[3].i2c_bus_name = "i2c_designware.3",
 	[3].id_string = "_UB949",
-	[3].gpio_pdb = 456,
-	[3].gpio_int = 457,
+	[3].gpio_pdb = 447,
+	[3].gpio_int = 448,
 	[3].i2c_bus = NULL,
-	[3].i2c_ser_addr = 0x1A,
+	[3].i2c_ser_addr = 0x12,
 	[3].i2c_deser_addr = 0x2C,
+#else
+#error undefined FPD3SER_HW_VERSION_xx
+#endif	
 };
 
 static int fpd3ser_write(unsigned int index, u8 addr, u8 reg, u8 val)
