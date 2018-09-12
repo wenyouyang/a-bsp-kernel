@@ -24,8 +24,15 @@
 
 /* until ACPI is supported, devices will searched on i2b busses */
 #define MAX_I2C_TRIAL 5
-#define FPD3SER_NR_OF_DEVICES 4
 #define ID_STRING_LENGTH 7
+#define FPD3SER_HW_VERSION_A1 1
+#define FPD3SER_HW_VERSION_B1 0
+
+#if (FPD3SER_HW_VERSION_B1 == 1)
+#define FPD3SER_NR_OF_DEVICES 4
+#else
+#define FPD3SER_NR_OF_DEVICES 4
+#endif
 
 struct fpd3ser_state {
 	char i2c_bus_name[32];
@@ -52,7 +59,7 @@ static struct fpd3ser_state links[FPD3SER_NR_OF_DEVICES] = {
 	[1].gpio_int = 460,
 	[1].i2c_bus = NULL,
 	[1].i2c_ser_addr = 0x0C,
-	[1].i2c_deser_addr = 0x2C,
+	[1].i2c_deser_addr = 0x0F,
 
 	[2].i2c_bus_name = "i2c_designware.6",
 	[2].id_string = "_UB947",
@@ -60,7 +67,7 @@ static struct fpd3ser_state links[FPD3SER_NR_OF_DEVICES] = {
 	[2].gpio_int = 462,
 	[2].i2c_bus = NULL,
 	[2].i2c_ser_addr = 0x12,
-	[2].i2c_deser_addr = 0x2D,
+	[2].i2c_deser_addr = 0x15,
 
 	[3].i2c_bus_name = "i2c_designware.3",
 	[3].id_string = "_UB949",
@@ -214,95 +221,54 @@ static int __fpd3ser_init(void)
 			ret |=
 			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x0E, 0x01);
 
-			/* set SCL high time */
-			ret |=
-			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x26,
-					  0x16);
-			/* set SCL high time */
-			ret |=
-			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x27,
-					  0x16);
-
-			/* set video disabled and override FC */
-			ret |=
-			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x28,
-					  0x80);
-			ret |=
-			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x34,
-					  0x89);
-			ret |=
-			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x49,
-					  0x60);
-
-			/* set TPC_RST high */
-			ret |=
-			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x1D,
-					  0x09);
-			/* set LAMP_ON and LAMP_PWM high */
-			ret |=
-			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x1E,
-					  0x90);
-			ret |=
-			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x1F,
-					  0x09);
 		} else if (links[i].id_string[5] == '7') {
 			/* DS90UB947 */
 			ret |=
 			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x03, 0xCA);
-			/* deserializer address 7 bit: 0x2C */
+			/* deserializer address 7 bit 
+			   deviate from hardware coded 0x2c */
 			ret |=
-			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x06, 0x58);
-			/* remote slave device[2] addr 0x74 */
+			    fpd3ser_write(i, 0x2C, 0x00,
+					  (links[i].i2c_deser_addr << 1) |
+					  0x01);
 			ret |=
-			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x71, 0xE8);
-			/* remote slave alias[2] addr 0x74 */
+			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x06,
+					  (links[i].i2c_deser_addr << 1) |
+					  0x01);
+
+			/* GPIO0: tristate */
 			ret |=
-			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x78, 0xE8);
-			/* GPIO0: enable input (BLT_EN_RSE_) */
+			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x0D, 0x20);
+			/* GPIO2: tristate  
+			   GPIO1: tristate */
 			ret |=
-			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x0D, 0x23);
-			/* GPIO2: enable remote output low  (AUX_DET)
-			   GPIO1: enable input (BLT_PWM_RSE_) */
+			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x0E, 0x22);
+			/* GPIO3: tristate */
 			ret |=
-			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x0E, 0x53);
-			/* GPIO3: enable input (TP_RST_RSE_) */
-			ret |=
-			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x0F, 0x03);
+			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x0F, 0x02);
 			/* enable pass through all i2c addresses */
 			ret |=
 			    fpd3ser_write(i, links[i].i2c_ser_addr, 0x17, 0x9E);
 
 			pr_debug("ser init %s", ret ? "failed" : "done");
 
-			/* configure remote deserializer */
-			/* GPIO0: enable remote output low  (BL_EN) */
-			ret |=
-			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x1D,
-					  0x25);
-			/* GPIO3: enable remote output low  (F_RESET) */
-			ret |=
-			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x1F,
-					  0x05);
-			/* GPIO2: enable input (AUX_DET)
-			   GPIO1: enable remote output low (BL_APWM) */
-			ret |=
-			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x1E,
-					  0x35);
-			/* ? */
-			ret |=
-			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x34,
-					  0x02);
-			/* OEN = 1 output enable */
-			ret |=
-			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x02,
-					  0x80);
-			/* GPIO_REG6: disable output low (?)
-			   GPIO_REG5: enable output high (?) */
-			ret |=
-			    fpd3ser_write(i, links[i].i2c_deser_addr, 0x20,
-					  0x09);
-			pr_debug("deser init %s", ret ? "failed" : "done");
 		}
+		/* set SCL high time */
+		ret |= fpd3ser_write(i, links[i].i2c_deser_addr, 0x26, 0x16);
+		/* set SCL high time */
+		ret |= fpd3ser_write(i, links[i].i2c_deser_addr, 0x27, 0x16);
+
+		/* set video disabled and override FC */
+		ret |= fpd3ser_write(i, links[i].i2c_deser_addr, 0x28, 0x80);
+		ret |= fpd3ser_write(i, links[i].i2c_deser_addr, 0x34, 0x89);
+		ret |= fpd3ser_write(i, links[i].i2c_deser_addr, 0x49, 0x60);
+
+		/* set TPC_RST high */
+		ret |= fpd3ser_write(i, links[i].i2c_deser_addr, 0x1D, 0x09);
+		/* set LAMP_ON and LAMP_PWM high */
+		ret |= fpd3ser_write(i, links[i].i2c_deser_addr, 0x1E, 0x90);
+		ret |= fpd3ser_write(i, links[i].i2c_deser_addr, 0x1F, 0x09);
+		pr_debug("deser init %s", ret ? "failed" : "done");
 
 	}
 	return ret;
