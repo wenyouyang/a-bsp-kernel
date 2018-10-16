@@ -8,6 +8,7 @@
 #include "crl_adv7481_hdmi_configuration.h"
 #include "crl_adv7481_eval_configuration.h"
 #include "crl_magna_configuration_ti964.h"
+#include "crl_adv7282_configuration.h"
 
 static const struct crlmodule_sensors supported_sensors[] = {
 	{ "ADV7481 CVBS", "adv7481_cvbs", &adv7481_cvbs_crl_configuration },
@@ -15,6 +16,7 @@ static const struct crlmodule_sensors supported_sensors[] = {
 	{ "ADV7481_EVAL", "adv7481_eval", &adv7481_eval_crl_configuration },
 	{ "ADV7481B_EVAL", "adv7481b_eval", &adv7481b_eval_crl_configuration },
 	{ "MAGNA_TI964", "magna_ti964", &magna_ti964_crl_configuration },
+	{ "ADV7282M", "adv7282m", &adv7282_crl_configuration },
 };
 
 /*
