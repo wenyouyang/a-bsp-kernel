@@ -76,7 +76,7 @@ static int crlmodule_get_nvm_data(struct crl_sensor *sensor)
 			sensor->sensor_ds->crl_nvm_info.nvm_flags
 				& CRL_NVM_ADDR_MODE_MASK,
 			sensor->sensor_ds->crl_nvm_info.nvm_config->size,
-			nvm_data);
+			nvm_data, 0);
 
 		nvm_data += sensor->sensor_ds->crl_nvm_info.nvm_config->size;
 		sensor->sensor_ds->crl_nvm_info.nvm_config++;
