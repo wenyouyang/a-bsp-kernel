@@ -177,6 +177,7 @@ struct crl_register_write_rep {
 	u8 len;
 	u32 val;
 	u16 dev_i2c_addr;
+	u16 page;
 };
 
 struct crl_register_read_rep {
@@ -184,6 +185,7 @@ struct crl_register_read_rep {
 	u8 len;
 	u32 mask;
 	u16 dev_i2c_addr;
+	u16 page;
 };
 
 /*
@@ -214,6 +216,7 @@ struct crl_dynamic_register_access {
 	u8 ops_items;
 	struct crl_arithmetic_ops *ops;
 	u16 dev_i2c_addr;
+	u16 page;
 };
 
 struct crl_sensor_detect_config {

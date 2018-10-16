@@ -100,7 +100,7 @@ static int adv_i2c_write(struct i2c_client *client, u16 i2c_addr, u16 reg, u8 va
 		i2c_get_clientdata(client);
 	struct crl_sensor *sensor = to_crlmodule_sensor(subdev);
 
-	return crlmodule_write_reg(sensor, i2c_addr, reg, 1, 0xFF, val);
+	return crlmodule_write_reg(sensor, i2c_addr, reg, 1, 0xFF, val, 0);
 }
 
 static int adv_i2c_read(struct i2c_client *client, u16 i2c_addr, u16 reg, u32 *val)

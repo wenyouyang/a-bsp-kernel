@@ -170,9 +170,27 @@ static int crlmodule_i2c_write(struct crl_sensor *sensor, u16 dev_i2c_addr,
 	return r;
 }
 
+static int crlmodule_i2c_select_page(struct crl_sensor *sensor,
+				     u16 dev_i2c_addr, u16 page)
+{
+	u8 pageno = page & 0xff;
+	u8 pagereg = page >> 8;
+	int ret = 0;
+
+	if ((pagereg) && (sensor->register_page != pageno)) {
+		ret = crlmodule_i2c_write(sensor, dev_i2c_addr,
+					  pagereg, CRL_REG_LEN_08BIT, pageno);
+		if (!ret)
+			sensor->register_page = pageno;
+	}
+
+	return ret;
+}
+
 int crlmodule_read_reg(struct crl_sensor *sensor,
 		       const struct crl_register_read_rep reg, u32 *val)
 {
+	crlmodule_i2c_select_page(sensor, reg.dev_i2c_addr, reg.page);
 	return crlmodule_i2c_read(sensor, reg.dev_i2c_addr, reg.address,
 				  reg.len, val);
 }
@@ -194,6 +212,10 @@ int crlmodule_write_regs(struct crl_sensor *sensor,
 			msleep(regs[i].val);
 			continue;
 		}
+
+		crlmodule_i2c_select_page(sensor, regs[i].dev_i2c_addr,
+					  regs[i].page);
+
 		/*
 		 * If the same register is being used for two settings, updating
 		 * one value should not overwrite the other one. Such registers
@@ -226,7 +248,7 @@ int crlmodule_write_regs(struct crl_sensor *sensor,
 }
 
 int crlmodule_write_reg(struct crl_sensor *sensor, u16 dev_i2c_addr, u16 reg,
-			u8 len, u32 mask, u32 val)
+			u8 len, u32 mask, u32 val, u16 page)
 {
 	struct i2c_client *client = sensor->src->sd.client;
 	int ret;
@@ -240,6 +262,8 @@ int crlmodule_write_reg(struct crl_sensor *sensor, u16 dev_i2c_addr, u16 reg,
 		msleep(val);
 		return 0;
 	}
+
+	crlmodule_i2c_select_page(sensor, dev_i2c_addr, page);
 
 	/*
 	 * If the same register is being used for two settings, updating
@@ -275,13 +299,15 @@ int crlmodule_write_reg(struct crl_sensor *sensor, u16 dev_i2c_addr, u16 reg,
 }
 
 int crlmodule_block_read(struct crl_sensor *sensor, u16 dev_i2c_addr, u16 addr,
-			 u8 addr_mode, u16 len, u8 *buf)
+			 u8 addr_mode, u16 len, u8 *buf, u16 page)
 {
 	struct i2c_client *client = sensor->src->sd.client;
 	struct i2c_msg msg[2];
 	u8 data[2];
 	u16 offset = 0;
 	int r;
+
+	crlmodule_i2c_select_page(sensor, dev_i2c_addr, page);
 
 	memset(msg, 0, sizeof(msg));
 
