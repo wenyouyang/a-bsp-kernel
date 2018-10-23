@@ -14,7 +14,7 @@
 
 #define GPIO_BASE		434
 
-#if defined(CONFIG_INTEL_IPU4_ADV7282M)
+#if defined(CONFIG_INTEL_IPU4_ICI_ADV7282M)
 
 #define ADV7282_CSI2_LANES	1
 #define ADV7282_I2C_ADDRESS	0x20
@@ -26,7 +26,7 @@ static struct crlmodule_lite_platform_data adv7282_crl_lite_pdata = {
 #endif
 	.lanes = ADV7282_CSI2_LANES,
 	.ext_clk = 28636300,
-	.op_sys_clock = (uint64_t []){13500000},
+	.op_sys_clock = (uint64_t []){216000000},
 	.module_name = "ADV7282M"
 };
 
@@ -60,8 +60,11 @@ static struct ipu_isys_clk_mapping clk_mapping[] = {
 
 static struct ipu_isys_subdev_pdata pdata = {
 	.subdevs = (struct ipu_isys_subdev_info *[]) {
-#if defined(CONFIG_INTEL_IPU4_ADV7282M)
+#if defined(CONFIG_INTEL_IPU4_ICI_ADV7282M)
 		&adv7282_sd,
+#endif
+#if defined(CONFIG_INTEL_IPU4_ICI_DS90UB940)
+		&ds90ub940_sd,
 #endif
 		NULL,
 	},

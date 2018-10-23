@@ -94,13 +94,6 @@ config INTEL_IPU4_ADV7481_EVAL
 	---help---
 	HDMI2MIPI convertor device ADV7481 eval board
 
-config INTEL_IPU4_ADV7282M
-	bool "Compile platform data for ADV7282-M"
-	---help---
-	ADV7282-M is a one-chip, multiformat video decoder converts
-	the analog videro signals into an 8-bit YCrCb 4:2:2 data stream
-	that is output over a MIPI CSI-2 interface.
-
 config INTEL_IPU4_IMX290
 	bool "Compile platform data for IMX290"
 	depends on INTEL_IPU4_BXT_P_PDATA
@@ -111,3 +104,9 @@ config INTEL_IPU4_ICI_APL_POLARIS_PDATA
 	bool "Enable built in platform data for Polaris Platform ICI driver"
 	---help---
 	IPU4 ICI platform data for Polaris platform
+
+config INTEL_IPU4_ICI_ADV7282M
+	bool "Compile platform data for ADV7282M"
+	depends on INTEL_IPU4_ICI_APL_POLARIS_PDATA
+	---help---
+	ADV7282M camera sensor on BDStar board
