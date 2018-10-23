@@ -1882,6 +1882,8 @@ static int crlmodule_start_streaming(struct crl_sensor *sensor)
 		return rval;
 	}
 
+	msleep(1000);
+
 	/* Write stream on list */
 	rval = crlmodule_write_regs(sensor,
 				   sensor->sensor_ds->streamon_regs,
