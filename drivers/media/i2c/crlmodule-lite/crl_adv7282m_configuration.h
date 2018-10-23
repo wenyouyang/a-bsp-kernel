@@ -10,10 +10,6 @@
 
 static struct crl_register_write_rep adv7282_powerup_regset[] = {
 #if 0 // Free-Run mode
-	{0x0f, CRL_REG_LEN_08BIT, 0x80, 0x40, 0x0e00},// Start reset sequence
-	{0x00, CRL_REG_LEN_DELAY, 0x0a, 0x00, 0x0000},
-	{0x0f, CRL_REG_LEN_08BIT, 0x00, 0x40, 0x0e00},// Exit Power Down Mode
-	{0x00, CRL_REG_LEN_DELAY, 0x0a, 0x00, 0x0000},
 	{0x00, CRL_REG_LEN_08BIT, 0x04, 0x40, 0x0e00},// ADI Required Write
 	{0x0c, CRL_REG_LEN_08BIT, 0x37, 0x40, 0x0e00},// Force Free-run Mode
 	{0x02, CRL_REG_LEN_08BIT, 0x84, 0x40, 0x0e00},// Force standard to PAL
@@ -36,19 +32,14 @@ static struct crl_register_write_rep adv7282_powerup_regset[] = {
 	{0xe0, CRL_REG_LEN_08BIT, 0x09, 0x88, 0x0000},// ADI Required Write
 	{0x2c, CRL_REG_LEN_08BIT, 0x00, 0x88, 0x0000},// ADI Required Write
 #else
-	{0x0f, CRL_REG_LEN_08BIT, 0x80, 0x40, 0x0e00},// Start reset sequence
-	{0x00, CRL_REG_LEN_DELAY, 0x0a, 0x00, 0x0000},
-	{0x0f, CRL_REG_LEN_08BIT, 0x00, 0x40, 0x0e00},// Exit Power Down Mode
-	{0x00, CRL_REG_LEN_DELAY, 0x0a, 0x00, 0x0000},
 	{0x00, CRL_REG_LEN_08BIT, 0x0e, 0x40, 0x0e00},// INSEL: CVBS_P in on AIN1, CVBS_N in on AIN2
-	{0x02, CRL_REG_LEN_08BIT, 0x04, 0x40, 0x0e00},// Force standard to PAL
 	{0x0f, CRL_REG_LEN_08BIT, 0x00, 0x40, 0x0e00},// ADI Required Write
 	{0x0e, CRL_REG_LEN_08BIT, 0x80, 0x40, 0x0e00},// ADI Required Write
 	{0x9c, CRL_REG_LEN_08BIT, 0x00, 0x40, 0x0e80},// ADI Required Write
 	{0x9c, CRL_REG_LEN_08BIT, 0xff, 0x40, 0x0e80},// ADI Required Write
 	{0x0e, CRL_REG_LEN_08BIT, 0x00, 0x40, 0x0e00},// Enter User Sub Map
 	{0x03, CRL_REG_LEN_08BIT, 0x4e, 0x40, 0x0e00},// ADI Required Write
-	{0x04, CRL_REG_LEN_08BIT, 0xd7, 0x40, 0x0e00},// Enable Intrq pin
+	{0x04, CRL_REG_LEN_08BIT, 0x57, 0x40, 0x0e00},// Enable Intrq pin
 	{0x13, CRL_REG_LEN_08BIT, 0x00, 0x40, 0x0e00},// Enable INTRQ output driver
 	{0x17, CRL_REG_LEN_08BIT, 0x41, 0x40, 0x0e00},// select SH1
 	{0x1d, CRL_REG_LEN_08BIT, 0xc0, 0x40, 0x0e00},// Tri-State LLC output driver
@@ -90,15 +81,15 @@ static struct crl_sensor_detect_config adv7282_sensor_detect_regset[] = {
 	},
 };
 
-static const s64 adv7282_op_sys_clock[] =  {13500000};
+static const s64 adv7282_op_sys_clock[] =  {216000000};
 
 static struct crl_pll_configuration adv7282_pll_configurations[] = {
 	{
 		.input_clk = 28636300,
-		.op_sys_clk = 13500000,
+		.op_sys_clk = 216000000,
 		.bitsperpixel = 16,
-		.pixel_rate_csi = 13500000,
-		.pixel_rate_pa = 13500000,
+		.pixel_rate_csi = 216000000,
+		.pixel_rate_pa = 216000000,
 		.comp_items = 0,
 		.ctrl_data = 0,
 		.pll_regs_items = 0,
@@ -210,9 +201,12 @@ static struct crl_ctrl_data adv7282_ctrls[] = {
 	},
 };
 
+int adv7282m_sensor_init(struct i2c_client *client);
+int adv7282m_sensor_cleanup(struct i2c_client *client);
+
 static struct crl_sensor_configuration adv7282_crl_configuration = {
-	.sensor_init = NULL,
-	.sensor_cleanup = NULL,
+	.sensor_init = adv7282m_sensor_init,
+	.sensor_cleanup = adv7282m_sensor_cleanup,
 
 	.onetime_init_regs_items = 0,
 	.onetime_init_regs = NULL,
