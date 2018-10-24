@@ -17,8 +17,8 @@ int crlmodule_read_reg(struct crl_sensor *sensor,
 int crlmodule_write_regs(struct crl_sensor *sensor,
 			 const struct crl_register_write_rep *regs, int len);
 int crlmodule_write_reg(struct crl_sensor *sensor, u16 dev_i2c_addr, u16 reg,
-			u8 len, u32 mask, u32 val);
+			u8 len, u32 mask, u32 val, u16 page);
 int crlmodule_block_read(struct crl_sensor *sensor, u16 dev_i2c_addr, u16 addr,
-			 u8 addr_mode, u16 len, u8 *buf);
+			 u8 addr_mode, u16 len, u8 *buf, u16 page);
 
 #endif /* __CRLMODULE_REGS_H_ */

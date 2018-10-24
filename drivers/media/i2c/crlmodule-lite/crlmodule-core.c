@@ -470,7 +470,7 @@ static int __crlmodule_update_dynamic_regs(struct crl_sensor *sensor,
 		/* Now ready to write the value */
 		ret = crlmodule_write_reg(sensor, reg->dev_i2c_addr,
 					reg->address, reg->len,
-					reg->mask, val_t);
+					reg->mask, val_t, reg->page);
 		if (ret)
 			return ret;
 	}
@@ -1882,6 +1882,8 @@ static int crlmodule_start_streaming(struct crl_sensor *sensor)
 		return rval;
 	}
 
+	msleep(1000);
+
 	/* Write stream on list */
 	rval = crlmodule_write_regs(sensor,
 				   sensor->sensor_ds->streamon_regs,
@@ -2595,6 +2597,7 @@ static int crlmodule_probe(struct i2c_client *client,
 	if (sensor == NULL)
 		return -ENOMEM;
 
+	sensor->register_page = 0;
 	sensor->platform_data = client->dev.platform_data;
 	mutex_init(&sensor->mutex);
 	mutex_init(&sensor->power_mutex);

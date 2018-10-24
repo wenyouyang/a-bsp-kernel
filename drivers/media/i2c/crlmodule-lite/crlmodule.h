@@ -67,6 +67,7 @@ struct crl_sensor {
 	u8 flip_info;
 	u8 pll_index;
 
+	unsigned int register_page;
 
 	int power_count;
 
