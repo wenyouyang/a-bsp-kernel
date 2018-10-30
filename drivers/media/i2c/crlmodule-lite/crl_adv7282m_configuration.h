@@ -8,12 +8,16 @@
 
 #include "crlmodule-sensor-ds.h"
 
+#undef ADV7282M_FREE_RUN_MODE
+
 static struct crl_register_write_rep adv7282_powerup_regset[] = {
-#if 0 // Free-Run mode
+#ifdef ADV7282M_FREE_RUN_MODE
+	{0x0f, CRL_REG_LEN_08BIT, 0x00, 0x40, 0x0e00},// Exit Power Down Mode
+	{0x00, CRL_REG_LEN_DELAY, 0x0a, 0x00, 0x0000},
 	{0x00, CRL_REG_LEN_08BIT, 0x04, 0x40, 0x0e00},// ADI Required Write
 	{0x0c, CRL_REG_LEN_08BIT, 0x37, 0x40, 0x0e00},// Force Free-run Mode
 	{0x02, CRL_REG_LEN_08BIT, 0x84, 0x40, 0x0e00},// Force standard to PAL
-	{0x14, CRL_REG_LEN_08BIT, 0x15, 0x40, 0x0e00},// Set Free-run pattern to color bars
+	{0x14, CRL_REG_LEN_08BIT, 0x11, 0x40, 0x0e00},// Set Free-run pattern to color bars
 	{0x03, CRL_REG_LEN_08BIT, 0x4e, 0x40, 0x0e00},// ADI Required Write
 	{0x04, CRL_REG_LEN_08BIT, 0x57, 0x40, 0x0e00},// Power-up INTRQ pin
 	{0x13, CRL_REG_LEN_08BIT, 0x00, 0x40, 0x0e00},// Enable INTRQ output driver
