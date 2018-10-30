@@ -63,9 +63,6 @@ static struct ipu_isys_subdev_pdata pdata = {
 #if defined(CONFIG_INTEL_IPU4_ICI_ADV7282M)
 		&adv7282_sd,
 #endif
-#if defined(CONFIG_INTEL_IPU4_ICI_DS90UB940)
-		&ds90ub940_sd,
-#endif
 		NULL,
 	},
 	.clk_map = clk_mapping,
