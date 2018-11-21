@@ -1,3 +1,5 @@
+ccflags-y += -DDEBUG
+
 snd-soc-skl-objs := skl.o skl-sdw-pcm.o skl-pcm.o skl-nhlt.o skl-messages.o \
 skl-topology.o skl-compress.o skl-probe.o
 
