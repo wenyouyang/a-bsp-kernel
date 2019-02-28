@@ -64,6 +64,7 @@ struct nhlt_acpi_table *skl_nhlt_init(struct device *dev)
 				memremap(nhlt_ptr->min_addr, nhlt_ptr->length,
 				MEMREMAP_WB);
 		ACPI_FREE(obj);
+		/*
 		if (nhlt_table && (strncmp(nhlt_table->header.signature,
 					NHLT_ACPI_HEADER_SIG,
 					strlen(NHLT_ACPI_HEADER_SIG)) != 0)) {
@@ -71,6 +72,7 @@ struct nhlt_acpi_table *skl_nhlt_init(struct device *dev)
 			dev_err(dev, "NHLT ACPI header signature incorrect\n");
 			return NULL;
 		}
+		*/
 		return nhlt_table;
 	}
 
