@@ -30,10 +30,15 @@ static const struct snd_soc_dapm_widget broxton_tdf8532_widgets[] = {
 	SND_SOC_DAPM_MIC("HdmiIn", NULL),
 	SND_SOC_DAPM_MIC("TestPinCp", NULL),
 	SND_SOC_DAPM_HP("TestPinPb", NULL),
-	SND_SOC_DAPM_MIC("BtHfpDl", NULL),
-	SND_SOC_DAPM_HP("BtHfpUl", NULL),
 	SND_SOC_DAPM_MIC("ModemDl", NULL),
 	SND_SOC_DAPM_HP("ModemUl", NULL),
+
+	SND_SOC_DAPM_MIC("BtHfpDl16k", NULL),
+	SND_SOC_DAPM_HP("BtHfpUl16k", NULL),
+	SND_SOC_DAPM_MIC("BtHfpDl8k", NULL),
+	SND_SOC_DAPM_HP("BtHfpUl8k", NULL),
+
+
 };
 
 static const struct snd_soc_dapm_route broxton_tdf8532_map[] = {
@@ -62,17 +67,24 @@ static const struct snd_soc_dapm_route broxton_tdf8532_map[] = {
 	{ "TestPinPb", NULL, "ssp5 Tx"},
 	{ "ssp5 Tx", NULL, "TestPin_ssp5_out"},
 
-	{ "BtHfp_ssp0_in", NULL, "ssp0 Rx"},
-	{ "ssp0 Rx", NULL, "BtHfpDl"},
-
-	{ "BtHfpUl", NULL, "ssp0 Tx"},
-	{ "ssp0 Tx", NULL, "BtHfp_ssp0_out"},
-
 	{ "Modem_ssp3_in", NULL, "ssp3 Rx"},
 	{ "ssp3 Rx", NULL, "ModemDl"},
 
 	{ "ModemUl", NULL, "ssp3 Tx"},
 	{ "ssp3 Tx", NULL, "Modem_ssp3_out"},
+
+	{ "BtHfp_ssp0_in", NULL, "ssp0 Rx"},
+	{ "ssp0 Rx", NULL, "BtHfpDl16k"},
+
+	{ "BtHfpUl16k", NULL, "ssp0 Tx"},
+	{ "ssp0 Tx", NULL, "BtHfp_ssp0_out"},
+
+	{ "BtHfp_ssp6_in", NULL, "ssp6 Rx"},
+	{ "ssp6 Rx", NULL, "BtHfpDl8k"},
+
+	{ "BtHfpUl8k", NULL, "ssp6 Tx"},
+	{ "ssp6 Tx", NULL, "BtHfp_ssp6_out"},
+
 };
 
 static int bxt_tdf8532_ssp2_fixup(struct snd_soc_pcm_runtime *rtd,
@@ -304,7 +316,7 @@ static struct snd_soc_dai_link broxton_tdf8532_dais[] = {
 	},
 	/* Back End DAI links */
 	{
-		/* SSP0 - BT */
+		/* SSP0 - BT, 16k */
 		.name = "SSP0-Codec",
 		.id = 0,
 		.cpu_dai_name = "SSP0 Pin",
@@ -372,6 +384,19 @@ static struct snd_soc_dai_link broxton_tdf8532_dais[] = {
 		.name = "SSP5-Codec",
 		.id = 5,
 		.cpu_dai_name = "SSP5 Pin",
+		.codec_name = "snd-soc-dummy",
+		.codec_dai_name = "snd-soc-dummy-dai",
+		.platform_name = "0000:00:0e.0",
+		.ignore_suspend = 1,
+		.dpcm_capture = 1,
+		.dpcm_playback = 1,
+		.no_pcm = 1,
+	},
+	{
+		/* SSP6 - BT, 8k */
+		.name = "SSP6-Codec",
+		.id = 6,
+		.cpu_dai_name = "SSP6 Pin",
 		.codec_name = "snd-soc-dummy",
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.platform_name = "0000:00:0e.0",
