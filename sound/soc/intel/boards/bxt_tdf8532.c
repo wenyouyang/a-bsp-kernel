@@ -73,6 +73,19 @@ static const struct snd_soc_dapm_route broxton_tdf8532_map[] = {
 
 	{ "ModemUl", NULL, "ssp3 Tx"},
 	{ "ssp3 Tx", NULL, "Modem_ssp3_out"},
+
+	{ "BtHfp_ssp0_in", NULL, "ssp6 Rx"},
+	{ "ssp6 Rx", NULL, "BtHfpDl"},
+
+	{ "BtHfpUl", NULL, "ssp6 Tx"},
+	{ "ssp6 Tx", NULL, "BtHfp_ssp0_out"},
+
+	{ "BtHfp_ssp0_in", NULL, "ssp7 Rx"},
+	{ "ssp7 Rx", NULL, "BtHfpDl"},
+
+	{ "BtHfpUl", NULL, "ssp7 Tx"},
+	{ "ssp7 Tx", NULL, "BtHfp_ssp0_out"},
+
 };
 
 static int bxt_tdf8532_ssp2_fixup(struct snd_soc_pcm_runtime *rtd,
@@ -372,6 +385,32 @@ static struct snd_soc_dai_link broxton_tdf8532_dais[] = {
 		.name = "SSP5-Codec",
 		.id = 5,
 		.cpu_dai_name = "SSP5 Pin",
+		.codec_name = "snd-soc-dummy",
+		.codec_dai_name = "snd-soc-dummy-dai",
+		.platform_name = "0000:00:0e.0",
+		.ignore_suspend = 1,
+		.dpcm_capture = 1,
+		.dpcm_playback = 1,
+		.no_pcm = 1,
+	},
+	{
+		/* SSP0 - BT, 16k */
+		.name = "SSP0-Codec-16k",
+		.id = 6,
+		.cpu_dai_name = "SSP6 Pin",
+		.codec_name = "snd-soc-dummy",
+		.codec_dai_name = "snd-soc-dummy-dai",
+		.platform_name = "0000:00:0e.0",
+		.ignore_suspend = 1,
+		.dpcm_capture = 1,
+		.dpcm_playback = 1,
+		.no_pcm = 1,
+	},
+	{
+		/* SSP0 - BT, 8k*/
+		.name = "SSP0-Codec-8k",
+		.id = 7,
+		.cpu_dai_name = "SSP7 Pin",
 		.codec_name = "snd-soc-dummy",
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.platform_name = "0000:00:0e.0",
