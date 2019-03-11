@@ -16,7 +16,7 @@ static struct crl_register_write_rep adv7282_powerup_regset[] = {
 	{0x00, CRL_REG_LEN_DELAY, 0x0a, 0x00, 0x0000},
 	{0x00, CRL_REG_LEN_08BIT, 0x04, 0x40, 0x0e00},// ADI Required Write
 	{0x0c, CRL_REG_LEN_08BIT, 0x37, 0x40, 0x0e00},// Force Free-run Mode
-	{0x02, CRL_REG_LEN_08BIT, 0x84, 0x40, 0x0e00},// Force standard to PAL
+	{0x02, CRL_REG_LEN_08BIT, 0x54, 0x40, 0x0e00},// Force standard to NTSC-M
 	{0x14, CRL_REG_LEN_08BIT, 0x11, 0x40, 0x0e00},// Set Free-run pattern to color bars
 	{0x03, CRL_REG_LEN_08BIT, 0x4e, 0x40, 0x0e00},// ADI Required Write
 	{0x04, CRL_REG_LEN_08BIT, 0x57, 0x40, 0x0e00},// Power-up INTRQ pin
@@ -107,11 +107,11 @@ static struct crl_subdev_rect_rep adv7282_ntsc_rects[] = {
 		.in_rect.left = 0,
 		.in_rect.top = 0,
 		.in_rect.width = 720,
-		.in_rect.height = 288,
+		.in_rect.height = 240,
 		.out_rect.left = 0,
 		.out_rect.top = 0,
 		.out_rect.width = 720,
-		.out_rect.height = 288,
+		.out_rect.height = 240,
 	},
 };
 
@@ -123,7 +123,7 @@ static struct crl_mode_rep adv7282_modes[] = {
 		.binn_vert = 1,
 		.scale_m = 1,
 		.width = 720,
-		.height = 288,
+		.height = 240,
 		.comp_items = 0,
 		.ctrl_data = 0,
 		.mode_regs_items = 0,
@@ -142,7 +142,7 @@ static struct crl_sensor_limits adv7282_sensor_limits = {
 	.x_addr_min = 0,
 	.y_addr_min = 0,
 	.x_addr_max = 720,
-	.y_addr_max = 288,
+	.y_addr_max = 240,
 	.min_frame_length_lines = 160,
 	.max_frame_length_lines = 65535,
 	.min_line_length_pixels = 6024,
